@@ -7,13 +7,14 @@ from __future__ import absolute_import
 # 
 import alpskit.data as akd
 from . import squarelattice as sl
+from . import chainlattice as cl
 
 from copy import deepcopy
 
 import numpy as np
 
 
-def measu_hole_msd_vs_time(case_data):
+def measu_hole_msd_vs_time(case_data, lattice='square lattice'):
   """Measure hole MSD (<r^2>) vs. time. Just for ONE hole case. 
 
   :case_data: str
@@ -22,13 +23,25 @@ def measu_hole_msd_vs_time(case_data):
       MSD vs. time data.
 
   """
+  def _get_idx_coor_map_and_lattice_size(data, lattice):
+    if lattice == 'chain lattice':
+      lattice_size = {'name': lattice,
+                      'L': int(data.props['L'])}
+      idx_coor_map = cl.get_idx_coor_map(lattice_size['L']) 
+    elif lattice == 'square lattice':
+      lattice_size = {'name': lattice,
+                      'L': int(data.props['L']),
+                      'W': int(data.props['W'])}
+      idx_coor_map = sl.get_idx_coor_map(lattice_size['L'],
+                                         lattice_size['W'])
+    return (idx_coor_map, lattice_size)
+
   orig_data_file_name = 'local_n_vs_tau.json'
   local_n_vs_tau = akd.js_to_measu_data(case_data +'/'+ orig_data_file_name)
-  L = int(local_n_vs_tau.props['L'])
-  W = int(local_n_vs_tau.props['W'])
+  idx_coor_map, lattice_size = \
+      _get_idx_coor_map_and_lattice_size(local_n_vs_tau, lattice)
   local_hole_vs_tau_data = 1 - local_n_vs_tau.y
-  idx_coor_map = sl.get_idx_coor_map(L, W)
-  msd = _get_msd(local_hole_vs_tau_data, idx_coor_map, L)
+  msd = _get_msd(local_hole_vs_tau_data, idx_coor_map, lattice_size)
   tau = np.array(local_n_vs_tau.x)
   props = dict(local_n_vs_tau.props)
   props['observation'] = 'MSD vs. time'
@@ -58,9 +71,11 @@ def measu_msd_exponent_vs_ln_tau(hole_msd_vs_time):
   return akd.MeasuData(ln_tau[:-1], msd_exponent, props)
 
 
-def _get_msd(local_hole_vs_tau, idx_coor_map, L):
-  ref_point = idx_coor_map[L-1]
-  # ref_point[1] = 0.5
+def _get_msd(local_hole_vs_tau, idx_coor_map, lattice_size):
+  if lattice_size['name'] == 'chain lattice':
+    ref_point = idx_coor_map[int(lattice_size['L']/2)]
+  elif lattice_size['name'] == 'square lattice':
+    ref_point = idx_coor_map[lattice_size['L']-1]
   site_num = len(idx_coor_map)
   relative_coor = idx_coor_map - np.array([ref_point]*site_num)
   relative_dis2 = []
