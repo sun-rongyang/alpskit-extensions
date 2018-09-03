@@ -71,6 +71,27 @@ def measu_msd_exponent_vs_ln_tau(hole_msd_vs_time):
   return akd.MeasuData(ln_tau[:-1], msd_exponent, props)
 
 
+def measu_entropy_vs_time(case_data, cut_bond):
+  """Measure entanglement entropy at `cut_bond' vs. time.
+
+  :case_data: str
+      Data folder to contain the data JSON files for the case.
+  :cut_bond: int
+      index of the cut bond start from 0.
+  :returns: alpskit.data.MeasuData
+      Entropy vs. time data.
+
+  """
+  orig_data_file_name = 'entropy_vs_tau.json'
+  entropy_vs_tau = akd.js_to_measu_data(case_data+'/'+orig_data_file_name)
+  tau = np.array(entropy_vs_tau.x)
+  entropy = entropy_vs_tau.y[:,cut_bond]
+  props = dict(entropy_vs_tau.props)
+  props['observation'] = 'Entropy vs. time'
+  props['xlabel'] = r'$\tau$'
+  props['ylabel'] = r'EE'
+  return akd.MeasuData(tau, entropy, props)
+
 def _get_msd(local_hole_vs_tau, idx_coor_map, lattice_size):
   if lattice_size['name'] == 'chain lattice':
     ref_point = idx_coor_map[int(lattice_size['L']/2)]
